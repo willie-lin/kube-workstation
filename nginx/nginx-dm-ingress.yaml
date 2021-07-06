@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: nginx-ingress
+  name: nginx-svc
+spec:
+  rules:
+  - host: nginxvc.test.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix 
+        backend:
+          service:
+            name: nginx-svc
+            port: 
+              number: 80

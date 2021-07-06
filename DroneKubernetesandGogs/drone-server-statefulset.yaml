@@ -1,0 +1,119 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: drone
+  namespace: drone
+  labels:
+    app: drone
+    service: cicd
+spec:
+  serviceName: drone
+  replicas: 1
+  selector:
+    matchLabels:
+      app: drone
+      service: cicd
+  template:
+    metadata:
+      labels:
+        app: drone
+        service: cicd
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: drone
+        image: drone/drone
+        ports:
+        - name: http
+          containerPort: 80
+        - name: https
+          containerPort: 443
+        env:
+        - name: DRONE_AGENTS_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: drone
+              key: drone_agents_enabled
+        - name: DRONE_GOGS_SERVER
+          valueFrom:
+            configMapKeyRef:
+              name: drone
+              key: drone_gogs_server
+        - name: DRONE_RPC_SECRET
+          valueFrom:
+            configMapKeyRef:
+              name: drone
+              key: drone_rpc_secret
+        - name: DRONE_SERVER_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: drone
+              key: drone_server_host
+        - name: DRONE_SERVER_PROTO
+          valueFrom:
+            configMapKeyRef:
+              name: drone
+              key: drone_server_proto
+        - name: DRONE_DATABASE_DRIVER
+          valueFrom:
+            configMapKeyRef:
+              name: drone
+              key: drone_db_driver
+        - name: DRONE_DATABASE_DATASOURCE
+          valueFrom:
+            configMapKeyRef:
+              name: drone
+              key: drone_db_datasource
+        volumeMounts:
+        - name: drone-data-storage
+          mountPath: /var/lib/drone
+        - name: tz-config
+          mountPath: /etc/localtime
+          readOnly: true
+      restartPolicy: Always
+      volumes:
+      - name: drone-data-storage
+        hostPath:
+          path: /opt/drone/data
+          type: Directory
+      - name: tz-config
+        hostPath:
+          path: /etc/localtime
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: drone
+  namespace: drone
+  labels:
+    app: drone
+    service: cicd
+spec:
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: 80
+  - name: https
+    protocol: TCP
+    port: 443
+    targetPort: 443
+  selector:
+    app: drone
+    service: cicd
+
+
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: drone-ingress
+  namespace: drone
+spec:
+  rules:
+  - host: drone.jicki.cn
+    http:
+      paths:
+      - backend:
+          serviceName: drone
+          servicePort: 80

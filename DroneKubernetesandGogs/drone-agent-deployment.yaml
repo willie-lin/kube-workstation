@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drone-agent
+  labels:
+    app.kubernetes.io/name: drone-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: drone-agent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: drone-agent
+    spec:
+      containers:
+      - name: runner
+        image: drone/drone-runner-kube:latest
+        ports:
+        - containerPort: 3000
+        env:
+        #- name: DRONE_SERVICE_ACCOUNT_DEFAULT
+        #        #  value: drone
+        - name: DRONE_RPC_HOST
+          value: drone.jicki.cn
+        - name: DRONE_RPC_PROTO
+          value: http
+        - name: DRONE_RPC_SECRET
+          value: ff7848cbd12a26c133fb6136301371c0
+        volumeMounts:
+        - name: dockersocket
+          mountPath: /var/run/docker.sock
+        - name: dockersocket-2
+          mountPath: /run/docker.sock
+        - name: docker-client
+          mountPath: /usr/bin/docker
+      restartPolicy: Always
+      volumes:
+      - name: dockersocket
+        hostPath:
+          path: /var/run/docker.sock
+      - name: dockersocket-2
+        hostPath:
+          path: /run/docker.sock
+      - name: docker-client
+        hostPath:
+          path: /usr/bin/docker

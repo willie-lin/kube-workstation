@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: drone
+  namespace: drone
+data:
+  drone_gogs_server: http://gogs.jicki.cn
+  drone_agents_enabled: 'true'
+  drone_rpc_secret: 'ff7848cbd12a26c133fb6136301371c0'
+  drone_db_driver: mysql
+  drone_db_datasource: root:123456@tcp(mysql.database.svc.cluster.local:3306)/drone?parseTime=true
+  drone_server_host: drone.jicki.cn
+  drone_server_proto: http

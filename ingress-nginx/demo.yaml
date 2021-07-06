@@ -1,0 +1,60 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: nginx
+  labels:
+    app: nginx
+spec:
+  serviceName: nginx
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      terminationGracePeriodSeconds: 180
+      initContainers:
+        - name: init
+          image: busybox
+          command: ["chmod","777","-R","/var/www"]
+          imagePullPolicy: Always
+          volumeMounts:
+          - name: volume
+            mountPath: /var/www/html
+      containers:
+      - name: nginx
+        image: nginx
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+          name: port
+        volumeMounts:
+        - name: volume
+          mountPath: /var/www/html
+  volumeClaimTemplates:
+  - metadata:
+      name: volume
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: rook-ceph
+      resources:
+        requests:
+          storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  labels:
+    app: nginx
+spec:
+  type: NodePort
+  ports:
+  - port: 80
+    targetPort: 80
+  selector:
+    app: nginx

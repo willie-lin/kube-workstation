@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment 
+metadata: 
+  name: nginx-dm
+  labels:
+    app: nginx
+spec: 
+  replicas: 3
+  strategy:
+    
+    type: RollingUpdate
+    rollingUpdate:
+      
+      maxSurge: 1
+      
+      maxUnavailable: 2
+ 
+  minReadySeconds: 120
+  selector:
+    matchLabels:
+      app: nginx
+  template: 
+    metadata: 
+      labels: 
+        app: nginx 
+        version: v1.0.0
+    spec: 
+      containers: 
+        - name: nginx 
+          image: nginx:alpine 
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+              name: http
+        
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 500Mi
+            requests:
+              
+              cpu: 0.5
+              memory: 250Mi 
+          volumeMounts:
+            - name: tz-config
+              mountPath: /etc/localtime
+              readOnly: true
+         
+         
+          readinessProbe:
+            tcpSocket:
+              port: 80
+           
+            initialDelaySeconds: 5  
+           
+            periodSeconds: 10
+            
+            successThreshold: 1
+           
+            failureThreshold: 1
+          
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            
+            initialDelaySeconds: 15
+           
+            periodSeconds: 20
+            
+            successThreshold: 1
+           
+            failureThreshold: 3
+      volumes:
+        - name: tz-config
+          hostPath:
+            path: /etc/localtime
+---
+
+apiVersion: v1 
+kind: Service
+metadata: 
+  name: nginx-svc 
+  labels:
+    app: nginx
+spec: 
+  ports: 
+    - port: 80
+      name: http
+      targetPort: 80
+      protocol: TCP 
+  selector: 
+    app: nginx

@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: example-ingress
+  annotations:
+   #  nginx.ingress.kubernetes.io/rewrite-target: /$1
+spec:
+  rules:
+    - host: web1.hello-world.info
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  number: 8080
+    - host: web2.hello-world.info
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web2
+                port:
+                  number: 8080    

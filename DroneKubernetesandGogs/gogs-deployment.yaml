@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gogs
+  namespace: git
+  labels:
+    app: gogs
+spec:
+  selector:
+    matchLabels:
+      app: gogs
+  template:
+    metadata:
+      labels:
+        app: gogs
+    spec:
+      containers:
+      - name: gogs
+        image: gogs/gogs
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3000
+          name: gogs
+        - containerPort: 22
+          name: ssh
+        resources:
+          requests:
+            cpu: "0.01"
+        volumeMounts:
+        - name: gogs-data-storage
+          mountPath: /data
+        - name: tz-config
+          mountPath: /etc/localtime
+          readOnly: true
+      restartPolicy: Always
+      volumes:
+      - name: gogs-data-storage
+        hostPath:
+          path: /opt/gogs/data
+          type: Directory
+      - name: tz-config
+        hostPath:
+          path: /etc/localtime
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gogs
+  namespace: git
+spec:
+  type: LoadBalancer 
+  ports:
+  - name: gogs
+    protocol: TCP
+    port: 3000
+    targetPort: 3000
+  selector:
+    app: gogs
+
+---
+#apiVersion: networking.k8s.io/v1
+#kind: Ingress
+#metadata:
+#  name: gogs-ingress
+#  namespace: git
+#spec:
+#  rules:
+#  - host: gogs.jicki.cn
+#    http:
+#      paths:
+#      - backend:
+#          serviceName: gogs
+#          servicePort: 3000

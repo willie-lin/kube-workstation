@@ -1,0 +1,76 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+  namespace: database
+  labels:
+    app: mysql
+    service: database
+spec:
+  serviceName: mysql
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+      service: database
+  template:
+    metadata:
+      labels:
+        app: mysql
+        service: database
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: mysql
+        image: mysql:8
+        args:
+        - --character-set-server=utf8mb4
+        - --collation-server=utf8mb4_unicode_ci
+        ports:
+        - name: http
+          containerPort: 3306
+        env:
+         - name: MYSQL_ROOT_PASSWORD
+           valueFrom:
+             secretKeyRef:
+               name: mysql-secret
+               key: root_pass
+        resources:
+          requests:
+            cpu: "0.01"
+        volumeMounts:
+        - name: mysql-data-storage
+          mountPath: /var/lib/mysql
+        - name: tz-config
+          mountPath: /etc/localtime
+          readOnly: true
+      restartPolicy: Always
+      volumes:
+      - name: mysql-data-storage
+        hostPath:
+          path: /opt/mysql/data
+          type: Directory
+      - name: tz-config
+        hostPath:
+          path: /etc/localtime
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: database
+  labels:
+    app: mysql
+    service: database
+spec:
+  ports:
+  - name: http
+    protocol: TCP
+    port: 3306
+    targetPort: 3306
+  selector:
+    app: mysql
+    service: database
+  type: LoadBalancer

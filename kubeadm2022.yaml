@@ -1,0 +1,71 @@
+apiVersion: kubeadm.k8s.io/v1beta2
+bootstrapTokens:
+- groups:
+  - system:bootstrappers:kubeadm:default-node-token
+  token: abcdef.0123456789abcdef
+  ttl: 24h0m0s
+  usages:
+  - signing
+  - authentication
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: 192.168.166.8
+  bindPort: 6443
+nodeRegistration:
+  criSocket: /run/containerd/containerd.sock
+  name: node1
+  taints: 
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/master
+---
+apiServer:
+  extraArgs:
+    # 审计日志相关配置
+    audit-log-maxage: "20"
+    audit-log-maxbackup: "10"
+    audit-log-maxsize: "100"
+    audit-log-path: "/var/log/kube-audit/audit.log"
+    audit-policy-file: "/etc/kubernetes/audit-policy.yaml"
+    audit-log-format: json
+  # 开启审计日志配置, 所以需要将宿主机上的审计配置
+  extraVolumes:
+  - name: "audit-config"
+    hostPath: "/etc/kubernetes/audit-policy.yaml"
+    mountPath: "/etc/kubernetes/audit-policy.yaml"
+    readOnly: true
+    pathType: "File"
+  - name: "audit-log"
+    hostPath: "/var/log/kube-audit"
+    mountPath: "/var/log/kube-audit"
+    pathType: "DirectoryOrCreate"
+  timeoutForControlPlane: 4m0s
+apiVersion: kubeadm.k8s.io/v1beta2
+certificatesDir: /etc/kubernetes/pki
+clusterName: kubernetes
+controlPlaneEndpoint: "192.168.166.8:6443"
+controllerManager: {}
+dns:
+  type: CoreDNS
+etcd:
+  local:
+    dataDir: /var/lib/etcd
+imageRepository: k8s.gcr.io
+kind: ClusterConfiguration
+kubernetesVersion: 1.21.0
+networking:
+  dnsDomain: cluster.local
+  podSubnet: 10.253.0.0/24
+  serviceSubnet: 10.254.0.0/24
+scheduler: {}
+
+---
+
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+kind: KubeProxyConfiguration
+mode: "ipvs"
+ipvs:
+  minSyncPeriod: 5s
+  syncPeriod: 5s
+  # 加权轮询调度
+  scheduler: "wrr"
+
